@@ -1,4 +1,5 @@
 #include "recursive_shared_mutex.hpp"
+
 #include <cassert>
 #include <iostream>
 
@@ -27,7 +28,9 @@ void test_try_lock() {
     assert(rsmtx.try_lock());
     assert(rsmtx.try_lock());
 
-    std::thread other_writer([&rsmtx] { assert(!rsmtx.try_lock()); });
+    std::thread other_writer([&rsmtx] {
+        assert(!rsmtx.try_lock());
+    });
     other_writer.join();
 
     rsmtx.unlock();

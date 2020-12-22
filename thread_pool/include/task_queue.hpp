@@ -1,11 +1,11 @@
 #pragma once
 
-#include "thread_pool_stopped.hpp"
-
 #include <condition_variable>
 #include <future>
 #include <mutex>
 #include <queue>
+
+#include "thread_pool_stopped.hpp"
 
 namespace dts {
 
@@ -26,7 +26,8 @@ public:
         {
             std::unique_lock<std::mutex> ulock(mtx_);
             if (!accept_push_) {
-                throw thread_pool_stopped("task_queue::push() called after stopping push.");
+                throw thread_pool_stopped(
+                  "task_queue::push() called after stopping push.");
             }
             q_.emplace(std::forward<Args>(args)...);
         }
@@ -36,6 +37,7 @@ public:
     task_type poll();
 
     void stop_push();
+
 private:
     std::mutex mtx_;
     std::condition_variable cv_;
@@ -43,4 +45,4 @@ private:
     std::queue<task_type> q_;
 };
 
-}
+}  // namespace dts

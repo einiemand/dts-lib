@@ -10,14 +10,14 @@ class recursive_shared_mutex : private std::shared_mutex {
 public:
     recursive_shared_mutex() = default;
     ~recursive_shared_mutex() = default;
-    
+
     void lock();
     bool try_lock();
     void unlock();
 
     /*
-    * std::shared_mutex's shared locking is recursive by default.
-    */
+     * std::shared_mutex's shared locking is recursive by default.
+     */
     void lock_shared() {
         std::shared_mutex::lock_shared();
     }
@@ -25,7 +25,7 @@ public:
     bool try_lock_shared() {
         return std::shared_mutex::try_lock_shared();
     }
-    
+
     void unlock_shared() {
         std::shared_mutex::unlock_shared();
     }
@@ -37,4 +37,4 @@ private:
     std::size_t writer_cnt_ = 0;
 };
 
-}
+}  // namespace dts

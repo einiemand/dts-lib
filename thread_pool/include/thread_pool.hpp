@@ -1,7 +1,8 @@
 #pragma once
 
-#include "task_queue.hpp"
 #include <functional>
+
+#include "task_queue.hpp"
 
 namespace dts {
 
@@ -19,7 +20,8 @@ public:
     template<typename Fn, typename... Args>
     decltype(auto) submit(Fn&& fn, Args&&... args) {
         using fn_res_t = std::invoke_result_t<Fn, Args...>;
-        std::packaged_task<fn_res_t()> ptask(std::bind(std::forward<Fn>(fn), std::forward<Args>(args)...));
+        std::packaged_task<fn_res_t()> ptask(
+          std::bind(std::forward<Fn>(fn), std::forward<Args>(args)...));
         auto future = ptask.get_future();
         tq_.emplace(std::move(ptask));
         return future;
@@ -32,4 +34,4 @@ private:
     void worker_func();
 };
 
-}
+}  // namespace dts

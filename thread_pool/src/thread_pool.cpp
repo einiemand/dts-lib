@@ -2,12 +2,11 @@
 
 namespace dts {
 
-thread_pool::thread_pool(size_type worker_cnt)
-    : tq_(),
-      workers_()
-{
+thread_pool::thread_pool(size_type worker_cnt) : tq_(), workers_() {
     while (worker_cnt--) {
-        workers_.emplace_back([this]() { worker_func(); });
+        workers_.emplace_back([this]() {
+            worker_func();
+        });
     }
 }
 
@@ -30,4 +29,4 @@ void thread_pool::worker_func() {
     }
 }
 
-}
+}  // namespace dts

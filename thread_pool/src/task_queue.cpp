@@ -4,9 +4,12 @@ namespace dts {
 
 task_queue::task_type task_queue::poll() {
     std::unique_lock<std::mutex> ulock(mtx_);
-    cv_.wait(ulock, [this]() { return !accept_push_ || !q_.empty(); });
+    cv_.wait(ulock, [this]() {
+        return !accept_push_ || !q_.empty();
+    });
     if (!accept_push_ && q_.empty()) {
-        throw thread_pool_stopped("task_queue is empty and task_queue::poll() called after stopping push.");
+        throw thread_pool_stopped("task_queue is empty and task_queue::poll() "
+                                  "called after stopping push.");
     }
     task_type task = std::move(q_.front());
     q_.pop();
@@ -21,4 +24,4 @@ void task_queue::stop_push() {
     cv_.notify_all();
 }
 
-}
+}  // namespace dts
