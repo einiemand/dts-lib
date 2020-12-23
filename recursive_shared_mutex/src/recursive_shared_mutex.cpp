@@ -18,7 +18,7 @@ void recursive_shared_mutex::lock() {
             // If another writer is holding the shared_mutex,
             // waiting for it to release.
             cv_.wait(ulock, [this] {
-                return writer_cnt_ == 0;
+                return writer_cnt_ == 0 && reader_map_.empty();
             });
         }
         std::shared_mutex::lock();

@@ -3,6 +3,7 @@
 #include <optional>
 #include <shared_mutex>
 #include <thread>
+#include <unordered_map>
 
 namespace dts {
 
@@ -15,26 +16,18 @@ public:
     bool try_lock();
     void unlock();
 
-    /*
-     * std::shared_mutex's shared locking is recursive by default.
-     */
-    void lock_shared() {
-        std::shared_mutex::lock_shared();
-    }
-
-    bool try_lock_shared() {
-        return std::shared_mutex::try_lock_shared();
-    }
-
-    void unlock_shared() {
-        std::shared_mutex::unlock_shared();
-    }
+    void lock_shared();
+    bool try_lock_shared();
+    void unlock_shared();
 
 private:
     std::mutex mtx_;
     std::condition_variable cv_;
+
     std::optional<std::thread::id> writer_id_ = std::nullopt;
     std::size_t writer_cnt_ = 0;
+
+    std::unordered_map<std::thread::id, std::size_t> reader_map_;
 };
 
 }  // namespace dts
