@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "optional": "cpp",
+        "shared_mutex": "cpp"
+    }
+}
