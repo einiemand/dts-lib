@@ -6,7 +6,7 @@ namespace dts {
 
 void recursive_shared_mutex::lock() {
     std::unique_lock<std::mutex> ulock(mtx_);
-    /*
+    /**
      * Use of cv_ guarantees that this function doesn't hold mtx_ forever if it
      * can't lock successfully.
      */
@@ -45,7 +45,7 @@ void recursive_shared_mutex::unlock() {
 
 void recursive_shared_mutex::lock_shared() {
     std::unique_lock<std::mutex> ulock(mtx_);
-    /*
+    /**
      * Use of cv_ guarantees that this function doesn't hold mtx_ forever if it
      * can't lock_shared successfully.
      */
@@ -83,7 +83,7 @@ void recursive_shared_mutex::unlock_shared() {
 }
 
 bool recursive_shared_mutex::try_lock_in_this_thread() {
-    /*
+    /**
      * Return true if
      * Current thread is already a writer
      * or
@@ -98,7 +98,7 @@ bool recursive_shared_mutex::try_lock_in_this_thread() {
 }
 
 bool recursive_shared_mutex::try_lock_shared_in_this_thread() {
-    /*
+    /**
      * Return true if
      * Current thread is already a writer
      * or

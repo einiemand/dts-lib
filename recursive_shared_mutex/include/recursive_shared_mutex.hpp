@@ -7,7 +7,7 @@
 
 namespace dts {
 
-/*
+/**
  * A recursive shared mutex that is similar to ReentrantReadWriteLock in Java.
  * A writer can acquire a read lock but a reader can't acquire a write lock.
  *
