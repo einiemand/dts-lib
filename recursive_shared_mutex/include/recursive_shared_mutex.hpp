@@ -29,6 +29,7 @@ private:
 
     std::unordered_map<std::thread::id, std::size_t> reader_map_;
 
+    bool try_lock_in_this_thread();
     bool try_lock_shared_in_this_thread();
 };
 
