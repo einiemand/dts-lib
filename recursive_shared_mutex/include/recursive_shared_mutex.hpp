@@ -28,6 +28,8 @@ private:
     std::size_t writer_cnt_ = 0;
 
     std::unordered_map<std::thread::id, std::size_t> reader_map_;
+
+    bool try_lock_shared_in_this_thread();
 };
 
 }  // namespace dts

@@ -37,10 +37,26 @@ void test_try_lock() {
     rsmtx.unlock();
 }
 
+void test_try_lock_shared() {
+    recursive_shared_mutex rsmtx;
+    assert(rsmtx.try_lock_shared());
+    assert(rsmtx.try_lock_shared());
+
+    std::thread other_writer([&rsmtx] {
+        assert(rsmtx.try_lock_shared());
+        rsmtx.unlock_shared();
+    });
+    other_writer.join();
+
+    rsmtx.unlock_shared();
+    rsmtx.unlock_shared();
+}
+
 int main() {
     test_recursiveness_shared();
     test_recursiveness_unique();
     test_try_lock();
+    test_try_lock_shared();
 
     std::cout << "All tests passed\n";
 
