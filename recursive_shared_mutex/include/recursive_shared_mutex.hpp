@@ -7,6 +7,14 @@
 
 namespace dts {
 
+/*
+ * A recursive shared mutex that is similar to ReentrantReadWriteLock in Java.
+ * A writer can acquire a read lock but a reader can't acquire a write lock.
+ *
+ * UB if any of the below actions are performed
+ * 1. unlock before it is locked.
+ * 2. unlock in a different thread from the one where it has been locked.
+ */
 class recursive_shared_mutex : private std::shared_mutex {
 public:
     recursive_shared_mutex() = default;
