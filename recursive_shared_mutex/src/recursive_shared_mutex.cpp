@@ -1,5 +1,8 @@
 #include "recursive_shared_mutex.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wparentheses"
+
 static const thread_local std::thread::id this_id = std::this_thread::get_id();
 
 namespace dts {
@@ -135,3 +138,5 @@ bool recursive_shared_mutex::try_lock_shared_in_this_thread() {
 }
 
 }  // namespace dts
+
+#pragma GCC diagnostic pop
