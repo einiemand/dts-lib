@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wparentheses"
+
 namespace dts {
 
 func_scheduler::func_scheduler(std::size_t worker_cnt) {
@@ -88,3 +91,5 @@ void func_scheduler::wait_impl(std::unique_lock<std::mutex>& ulock) {
 }
 
 }  // namespace dts
+
+#pragma GCC diagnostic pop
