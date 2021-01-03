@@ -72,8 +72,8 @@ void func_scheduler::worker_func() {
             if (!accept_new_ && todo_.empty()) {
                 break;
             }
-            func = std::move(todo_.begin()->second);
-            todo_.erase(todo_.begin());
+            auto func_info = todo_.extract(todo_.begin());
+            func = std::move(func_info.mapped());
         }
         std::invoke(func);
         all_done_cv_.notify_one();
