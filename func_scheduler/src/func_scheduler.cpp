@@ -51,14 +51,14 @@ void func_scheduler::dispatch_func() {
                     break;
                 }
             }
-            auto invoke_time = todo_.begin()->first;
+            auto invoke_time = todo_.soonest_invoke_time();
             while (invoke_time > clock_type::now()) {
                 bool has_sooner_invoke_time =
                   dispatch_cv_.wait_until(ulock, invoke_time, [&] {
-                      return todo_.begin()->first < invoke_time;
+                      return todo_.soonest_invoke_time() < invoke_time;
                   });
                 if (has_sooner_invoke_time) {
-                    invoke_time = todo_.begin()->first;
+                    invoke_time = todo_.soonest_invoke_time();
                 }
             }
         }
@@ -74,13 +74,13 @@ void func_scheduler::work_func() {
             worker_cv_.wait(ulock, [this] {
                 return !accept_new_ ||
                        !todo_.empty() &&
-                         todo_.cbegin()->first <= clock_type::now();
+                         todo_.soonest_invoke_time() <= clock_type::now();
             });
             if (!accept_new_ && todo_.empty()) {
                 break;
             }
-            auto func_info = todo_.extract(todo_.begin());
-            func = std::move(func_info.mapped());
+            auto func_info = todo_.extract_first_info();
+            func = std::move(func_info.func());
         }
         std::invoke(func);
         all_done_cv_.notify_one();
