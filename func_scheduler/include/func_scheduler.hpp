@@ -21,19 +21,16 @@ public:
     func_scheduler(const func_scheduler&) = delete;
     func_scheduler& operator=(const func_scheduler&) = delete;
 
-    template<typename Rep, typename Period, typename Fn, typename... Args>
-    decltype(auto) run_after(const std::chrono::duration<Rep, Period>& dur,
-                             Fn&& fn, Args&&... args) {
+    template<typename Dur, typename Fn, typename... Args>
+    decltype(auto) run_after(const Dur& dur, Fn&& fn, Args&&... args) {
         const tp_type now = clock_type::now();
         return run_at(now + dur, std::forward<Fn>(fn),
                       std::forward<Args>(args)...);
     }
 
-    template<typename Rep, typename Period, typename Fn, typename... Args>
-    decltype(auto) run_at(
-      const std::chrono::time_point<clock_type,
-                                    std::chrono::duration<Rep, Period>>& when,
-      Fn&& fn, Args&&... args) {
+    template<typename Dur, typename Fn, typename... Args>
+    decltype(auto) run_at(const std::chrono::time_point<clock_type, Dur>& when,
+                          Fn&& fn, Args&&... args) {
         const tp_type now = clock_type::now();
         if (when <= now) {
             throw std::runtime_error("bad");
