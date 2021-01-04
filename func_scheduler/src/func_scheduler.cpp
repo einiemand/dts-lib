@@ -53,10 +53,11 @@ void func_scheduler::dispatch_func() {
             }
             auto invoke_time = todo_.begin()->first;
             while (invoke_time > clock_type::now()) {
-                bool pred = dispatch_cv_.wait_until(ulock, invoke_time, [&] {
-                    return todo_.begin()->first < invoke_time;
-                });
-                if (pred) {
+                bool has_sooner_invoke_time =
+                  dispatch_cv_.wait_until(ulock, invoke_time, [&] {
+                      return todo_.begin()->first < invoke_time;
+                  });
+                if (has_sooner_invoke_time) {
                     invoke_time = todo_.begin()->first;
                 }
             }
