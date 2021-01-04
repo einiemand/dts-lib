@@ -35,7 +35,7 @@ public:
                           Fn&& fn, Args&&... args) {
         const tp_type now = clock_type::now();
         if (when <= now) {
-            throw std::runtime_error("bad");
+            throw std::invalid_argument("Can't postpone a function that should've been run before now");
         }
         using fn_res_t = std::invoke_result_t<Fn, Args...>;
         std::packaged_task<fn_res_t()> ptask(
