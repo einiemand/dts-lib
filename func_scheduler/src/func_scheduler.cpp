@@ -10,7 +10,7 @@ namespace dts {
 func_scheduler::func_scheduler(std::size_t worker_cnt) {
     while (worker_cnt--) {
         workers_.emplace_back([this] {
-            worker_func();
+            work_func();
         });
     }
 }
@@ -66,7 +66,7 @@ void func_scheduler::dispatch_func() {
     }
 }
 
-void func_scheduler::worker_func() {
+void func_scheduler::work_func() {
     while (true) {
         func_type func;
         {

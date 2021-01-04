@@ -63,7 +63,7 @@ private:
     std::multimap<tp_type, func_type> todo_;
 
     void dispatch_func();
-    void worker_func();
+    void work_func();
 };
 
 }  // namespace dts
