@@ -23,6 +23,8 @@ public:
 
     template<typename Dur, typename Fn, typename... Args>
     decltype(auto) run_after(const Dur& dur, Fn&& fn, Args&&... args) {
+        static_assert(std::chrono::__is_duration<Dur>::value,
+                      "dur must be of type std::chrono::duration.");
         const tp_type now = clock_type::now();
         return run_at(now + dur, std::forward<Fn>(fn),
                       std::forward<Args>(args)...);
