@@ -16,12 +16,7 @@ func_scheduler::func_scheduler(std::size_t worker_cnt) {
 }
 
 func_scheduler::~func_scheduler() {
-    {
-        std::unique_lock<std::mutex> ulock(mtx_);
-        if (accept_new_) {
-            wait_impl(ulock);
-        }
-    }
+    wait();
     dispatcher_.join();
     for (auto& worker : workers_) {
         worker.join();
@@ -29,8 +24,19 @@ func_scheduler::~func_scheduler() {
 }
 
 void func_scheduler::wait() {
-    std::unique_lock<std::mutex> ulock(mtx_);
-    wait_impl(ulock);
+    {
+        std::unique_lock<std::mutex> ulock(mtx_);
+        if (!accept_new_) {
+            // wait() has already been called.
+            return;
+        }
+        accept_new_ = false;
+        all_done_cv_.wait(ulock, [this] {
+            return todo_.empty();
+        });
+    }
+    dispatch_cv_.notify_one();
+    worker_cv_.notify_all();
 }
 
 void func_scheduler::dispatch_func() {
@@ -78,16 +84,6 @@ void func_scheduler::worker_func() {
         std::invoke(func);
         all_done_cv_.notify_one();
     }
-}
-
-void func_scheduler::wait_impl(std::unique_lock<std::mutex>& ulock) {
-    accept_new_ = false;
-    all_done_cv_.wait(ulock, [this] {
-        return todo_.empty();
-    });
-    ulock.unlock();
-    dispatch_cv_.notify_one();
-    worker_cv_.notify_all();
 }
 
 }  // namespace dts

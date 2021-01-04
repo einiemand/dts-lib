@@ -67,8 +67,6 @@ private:
 
     void dispatch_func();
     void worker_func();
-
-    void wait_impl(std::unique_lock<std::mutex>& ulock);
 };
 
 }  // namespace dts
