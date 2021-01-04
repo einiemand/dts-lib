@@ -8,7 +8,7 @@ fi
 
 repo_path=$(dirname $(readlink -f $0))
 printf "repo_path: $repo_path\n"
-cpp_files=$(find $repo_path -path $repo_path/build -prune -false -o -name *.hpp -o -name *.cpp)
+cpp_files=$(find $repo_path -path $repo_path/build -prune -false -o -name *.hpp -o -name *.cpp -o -name *.ipp)
 printf "cpp_files:\n$cpp_files\n"
 
 clang-format --style=file -i $cpp_files
