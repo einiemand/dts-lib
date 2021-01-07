@@ -47,7 +47,7 @@ void func_scheduler::dispatch_func() {
                 dispatch_cv_.wait(ulock, [this] {
                     return !accept_new_ || !todo_.empty();
                 });
-                if (!accept_new_) {
+                if (!accept_new_ && todo_.empty()) {
                     break;
                 }
             }
