@@ -1,9 +1,14 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 namespace dts {
+
+inline constexpr std::size_t bits_per_byte = 8;
+inline constexpr std::size_t uint64_width = sizeof(uint64_t) * bits_per_byte;
 
 class dynamic_bitset {
 public:
@@ -11,27 +16,78 @@ public:
     using buffer_type = std::vector<block_type>;
     using size_type = buffer_type::size_type;
 
-    static constexpr size_type block_byte_size = sizeof(block_type);
-    static constexpr size_type block_bit_size = block_byte_size * 8;
+    static constexpr size_type bytes_per_block = sizeof(block_type);
+    static constexpr size_type bits_per_block = bytes_per_block * 8;
 
     class reference {
     public:
-        reference(block_type& blk, size_type pos);
+        reference(block_type& blk, size_type pos)
+            : blk_(blk),
+              mask_((assert(pos < bits_per_block), block_type(1) << pos)) {}
+
         ~reference() = default;
-
         reference(const reference&) noexcept = default;
-        reference& operator=(const reference&) noexcept = default;
 
-        reference& operator=(bool val);
+        reference& operator=(const reference& other) {
+            if (other) {
+                set();
+            }
+            else {
+                reset();
+            }
+            return *this;
+        }
 
-        reference& operator&=(bool val);
-        reference& operator|=(bool val);
-        reference& operator^=(bool val);
-        bool operator~() const;
+        reference& operator=(bool val) {
+            if (val) {
+                set();
+            }
+            else {
+                reset();
+            }
+            return *this;
+        }
+
+        reference& operator&=(bool val) {
+            if (!val) {
+                reset();
+            }
+            return *this;
+        }
+
+        reference& operator|=(bool val) {
+            if (val) {
+                set();
+            }
+            return *this;
+        }
+
+        reference& operator^=(bool val) {
+            if (val) {
+                blk_ ^= mask_;
+            }
+            return *this;
+        }
+
+        operator bool() const {
+            return (blk_ & mask_) != 0;
+        }
+
+        bool operator~() const {
+            return !(*this);
+        }
 
     private:
         block_type& blk_;
         const block_type mask_;
+
+        void set() {
+            blk_ |= mask_;
+        }
+
+        void reset() {
+            blk_ &= ~mask_;
+        }
     };
 
     using const_reference = bool;
@@ -48,21 +104,23 @@ public:
     dynamic_bitset& operator&=(const dynamic_bitset& other);
     dynamic_bitset& operator|=(const dynamic_bitset& other);
     dynamic_bitset& operator^=(const dynamic_bitset& other);
-    dynamic_bitset& operator-=(const dynamic_bitset& other);
     dynamic_bitset& operator<<=(size_type offset);
     dynamic_bitset& operator>>=(size_type offset);
     dynamic_bitset operator<<(size_type offset) const;
     dynamic_bitset operator>>(size_type offset) const;
     dynamic_bitset operator~() const;
 
-    friend bool operator==(const dynamic_bitset& lhs, const dynamic_bitset& rhs);
-    friend bool operator!=(const dynamic_bitset& lhs, const dynamic_bitset& rhs);
+    friend bool operator==(const dynamic_bitset& lhs,
+                           const dynamic_bitset& rhs);
+    friend bool operator!=(const dynamic_bitset& lhs,
+                           const dynamic_bitset& rhs);
 
-    dynamic_bitset& set(size_type n, bool val = true);
+    dynamic_bitset& set(size_type pos, size_type len, bool val);
+    dynamic_bitset& set(size_type pos, bool val = true);
     dynamic_bitset& set();
-    dynamic_bitset& reset(size_type n);
+    dynamic_bitset& reset(size_type pos);
     dynamic_bitset& reset();
-    dynamic_bitset& flip(size_type n);
+    dynamic_bitset& flip(size_type pos);
     dynamic_bitset& flip();
 
     bool test(size_type n) const;
@@ -77,10 +135,20 @@ public:
     size_type size() const;
     size_type num_blocks() const;
     bool empty() const;
+    std::string to_string(char zero = '0', char one = '1') const;
 
 private:
     buffer_type buf_;
     size_type bit_cnt_;
+
+    using block_visitor = std::function<void(size_type, const block_type&)>;
+    void visit_each_block(const block_visitor& visitor) const;
+
+    void expand_if_smaller_than(size_type new_bit_cnt);
+
+    static size_type block_cnt_from_bit_cnt(size_type bit_cnt);
+    static size_type bit_pos_to_block_index(size_type pos);
+    static size_type bit_pos_to_bit_index(size_type pos);
 };
 
 }  // namespace dts
