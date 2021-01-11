@@ -76,6 +76,25 @@ dynamic_bitset& dynamic_bitset::operator<<=(size_type offset) {
     return *this;
 }
 
+dynamic_bitset& dynamic_bitset::operator>>=(size_type offset) {
+    if (offset < size()) {
+        const size_type blk_idx_diff = bit_pos_to_block_index(offset);
+        const size_type bit_idx_diff = bit_pos_to_bit_index(offset);
+        for (size_type low_blk_idx = 0, high_blk_idx = blk_idx_diff;
+             high_blk_idx + 1 < num_blocks(); ++low_blk_idx, ++high_blk_idx)
+        {
+            buf_[low_blk_idx] = (buf_[high_blk_idx] >> bit_idx_diff) |
+                                n_lsb(buf_[high_blk_idx + 1], bit_idx_diff);
+        }
+        buf_[num_blocks() - blk_idx_diff - 1] = (buf_.back() >> bit_idx_diff);
+        set(size() - offset, offset, 0);
+    }
+    else {
+        reset();
+    }
+    return *this;
+}
+
 dynamic_bitset& dynamic_bitset::set(size_type pos, size_type len, bool val) {
     for (size_type i = pos; i < pos + len; ++i) {
         set(i, val);
