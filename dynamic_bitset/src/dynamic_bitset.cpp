@@ -102,6 +102,21 @@ dynamic_bitset& dynamic_bitset::operator>>=(size_type offset) {
     return *this;
 }
 
+dynamic_bitset dynamic_bitset::operator<<(size_type offset) const {
+    dynamic_bitset copy(*this);
+    return (copy <<= offset);
+}
+
+dynamic_bitset dynamic_bitset::operator>>(size_type offset) const {
+    dynamic_bitset copy(*this);
+    return (copy >>= offset);
+}
+
+dynamic_bitset dynamic_bitset::operator~() const {
+    dynamic_bitset copy(*this);
+    return copy.flip();
+}
+
 dynamic_bitset& dynamic_bitset::set(size_type pos, size_type len, bool val) {
     const size_type last_pos = pos + len;
     if (pos >= size() || last_pos > size()) {
@@ -159,6 +174,30 @@ dynamic_bitset& dynamic_bitset::reset() {
     return set(0, size(), 0);
 }
 
+dynamic_bitset& dynamic_bitset::flip(size_type pos) {
+    (*this)[pos] ^= 1;
+    return *this;
+}
+
+dynamic_bitset& dynamic_bitset::flip() {
+    if (!empty()) {
+        for (size_type blk_idx = 0; blk_idx + 1 < num_blocks(); ++blk_idx) {
+            buf_[blk_idx] ^= ones;
+        }
+        const size_type last_bit_idx = bit_pos_to_bit_index(size() - 1) + 1;
+        buf_.back() ^= bit_mask<block_type>(0, last_bit_idx);
+    }
+    return *this;
+}
+
+bool dynamic_bitset::test(size_type pos) const {
+    return static_cast<bool>((*this)[pos]);
+}
+
+bool dynamic_bitset::any() const {
+    return std::any_of(buf_.begin(), buf_.end(), [](block_type blk) { return blk != zeros; });
+}
+
 dynamic_bitset::reference dynamic_bitset::operator[](size_type pos) {
     return reference(buf_[bit_pos_to_block_index(pos)],
                      bit_pos_to_bit_index(pos));
@@ -168,6 +207,11 @@ dynamic_bitset::const_reference dynamic_bitset::operator[](
   size_type pos) const {
     return static_cast<const_reference>(
       const_cast<dynamic_bitset&>(*this)[pos]);
+}
+
+void dynamic_bitset::push_back(bool bit) {
+    expand_if_smaller_than(size() + 1);
+    set(size() - 1, 1, bit);
 }
 
 dynamic_bitset::size_type dynamic_bitset::size() const {
@@ -188,12 +232,6 @@ std::string dynamic_bitset::to_string(char zero, char one) const {
         stream << ((*this)[i - 1] ? one : zero);
     }
     return stream.str();
-}
-
-void dynamic_bitset::visit_each_block(const block_visitor& visitor) const {
-    for (size_type i = 0; i < buf_.size(); ++i) {
-        visitor(i, buf_[i]);
-    }
 }
 
 void dynamic_bitset::expand_if_smaller_than(size_type new_bit_cnt) {

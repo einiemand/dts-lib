@@ -123,14 +123,13 @@ public:
     dynamic_bitset& flip(size_type pos);
     dynamic_bitset& flip();
 
-    bool test(size_type n) const;
+    bool test(size_type pos) const;
     bool any() const;
 
     reference operator[](size_type pos);
     const_reference operator[](size_type pos) const;
 
     void push_back(bool bit);
-    void adjust();
 
     size_type size() const;
     size_type num_blocks() const;
@@ -140,9 +139,6 @@ public:
 private:
     buffer_type buf_;
     size_type bit_cnt_;
-
-    using block_visitor = std::function<void(size_type, const block_type&)>;
-    void visit_each_block(const block_visitor& visitor) const;
 
     void expand_if_smaller_than(size_type new_bit_cnt);
 

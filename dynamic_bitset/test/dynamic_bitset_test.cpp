@@ -59,12 +59,39 @@ void test_right_shift() {
     }
 }
 
+void test_flip() {
+    static constexpr std::size_t iter_cnt = 100;
+    for (std::size_t i = 0; i < iter_cnt; ++i) {
+        uint64_t num = rand();
+        dynamic_bitset db(uint64_width, num);
+        std::bitset<uint64_width> bs(num);
+        db.flip();
+        bs.flip();
+        assert(db.to_string() == bs.to_string());
+    }
+}
+
+void test_push_back() {
+    static constexpr std::size_t iter_cnt = 100;
+    for (std::size_t i = 0; i < iter_cnt; ++i) {
+        uint64_t num = rand();
+        dynamic_bitset db(uint64_width, num);
+        std::bitset<uint64_width + 1> bs(num);
+        bool bit = rand() % 2;
+        db.push_back(bit);
+        bs[uint64_width] = bit;
+        assert(db.to_string() == bs.to_string());
+    }
+}
+
 int main() {
     srand(time(0));
     test_to_string();
     test_set();
     test_left_shift();
     test_right_shift();
+    test_flip();
+    test_push_back();
     std::cout << "All tests passed\n";
 
     return 0;
