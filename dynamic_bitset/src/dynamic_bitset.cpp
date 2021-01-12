@@ -57,7 +57,10 @@ dynamic_bitset& dynamic_bitset::operator^=(const dynamic_bitset& other) {
 }
 
 dynamic_bitset& dynamic_bitset::operator<<=(size_type offset) {
-    if (offset < size()) {
+    if (offset >= size()) {
+        reset();
+    }
+    else if (offset > 0) {
         const size_type blk_idx_diff = bit_pos_to_block_index(offset);
         const size_type bit_idx_diff = bit_pos_to_bit_index(offset);
         for (size_type high_blk_idx = num_blocks() - 1,
@@ -70,14 +73,14 @@ dynamic_bitset& dynamic_bitset::operator<<=(size_type offset) {
         buf_[blk_idx_diff] = (buf_[0] << bit_idx_diff);
         set(0, offset, 0);
     }
-    else {
-        reset();
-    }
     return *this;
 }
 
 dynamic_bitset& dynamic_bitset::operator>>=(size_type offset) {
-    if (offset < size()) {
+    if (offset >= size()) {
+        reset();
+    }
+    else if (offset > 0) {
         const size_type blk_idx_diff = bit_pos_to_block_index(offset);
         const size_type bit_idx_diff = bit_pos_to_bit_index(offset);
         for (size_type low_blk_idx = 0, high_blk_idx = blk_idx_diff;
@@ -89,29 +92,58 @@ dynamic_bitset& dynamic_bitset::operator>>=(size_type offset) {
         buf_[num_blocks() - blk_idx_diff - 1] = (buf_.back() >> bit_idx_diff);
         set(size() - offset, offset, 0);
     }
-    else {
-        reset();
-    }
     return *this;
 }
 
 dynamic_bitset& dynamic_bitset::set(size_type pos, size_type len, bool val) {
-    for (size_type i = pos; i < pos + len; ++i) {
-        set(i, val);
+    const size_type last_pos = pos + len;
+    if (pos >= size() || last_pos > size()) {
+        throw std::out_of_range("dynamic_bitset::set() out of range");
     }
+
+    const size_type first_blk_idx = bit_pos_to_block_index(pos);
+    const size_type first_bit_idx = bit_pos_to_bit_index(pos);
+    const size_type last_blk_idx = bit_pos_to_block_index(last_pos);
+    const size_type last_bit_idx = bit_pos_to_bit_index(last_pos);
+
+    const block_type new_bits = (val ? ones : zeros);
+
+    for (size_type blk_idx = first_blk_idx + 1; blk_idx < last_blk_idx;
+         ++blk_idx) {
+        buf_[blk_idx] = new_bits;
+    }
+    block_type& first_blk = buf_[first_blk_idx];
+    block_type& last_blk = buf_[last_blk_idx];
+    if (first_blk_idx < last_blk_idx) {
+        first_blk =
+          (n_msb(new_bits, bits_per_block - first_bit_idx) << first_bit_idx) |
+          n_lsb(first_blk, first_bit_idx);
+        last_blk =
+          (n_msb(last_blk, bits_per_block - last_bit_idx) << last_bit_idx) |
+          n_lsb(new_bits, last_bit_idx);
+    }
+    else {
+        first_blk =
+          (n_msb(first_blk, bits_per_block - last_bit_idx) << last_bit_idx) |
+          (((new_bits >> first_bit_idx)
+            << (bits_per_block - last_bit_idx + first_bit_idx)) >>
+           (bits_per_block - last_bit_idx)) |
+          n_lsb(first_blk, first_bit_idx);
+    }
+
     return *this;
 }
 
 dynamic_bitset& dynamic_bitset::set(size_type pos, bool val) {
+    if (pos >= size()) {
+        throw std::out_of_range("dynamic_bitset::set() out of range");
+    }
     (*this)[pos] = val;
     return *this;
 }
 
 dynamic_bitset& dynamic_bitset::set() {
-    for (block_type& blk : buf_) {
-        blk = static_cast<block_type>(-1);
-    }
-    return *this;
+    return set(0, size(), 1);
 }
 
 dynamic_bitset& dynamic_bitset::reset(size_type pos) {
@@ -119,10 +151,7 @@ dynamic_bitset& dynamic_bitset::reset(size_type pos) {
 }
 
 dynamic_bitset& dynamic_bitset::reset() {
-    for (block_type& blk : buf_) {
-        blk = static_cast<block_type>(0);
-    }
-    return *this;
+    return set(0, size(), 0);
 }
 
 dynamic_bitset::reference dynamic_bitset::operator[](size_type pos) {
@@ -165,7 +194,7 @@ void dynamic_bitset::visit_each_block(const block_visitor& visitor) const {
 void dynamic_bitset::expand_if_smaller_than(size_type new_bit_cnt) {
     if (size() < new_bit_cnt) {
         size_type new_blk_cnt = block_cnt_from_bit_cnt(new_bit_cnt);
-        buf_.resize(new_blk_cnt, block_type(0));
+        buf_.resize(new_blk_cnt, zeros);
         bit_cnt_ = new_bit_cnt;
     }
 }

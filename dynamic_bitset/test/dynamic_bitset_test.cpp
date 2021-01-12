@@ -16,6 +16,23 @@ void test_to_string() {
     }
 }
 
+void test_set() {
+    static constexpr std::size_t iter_cnt = 100;
+    for (std::size_t i = 0; i < iter_cnt; ++i) {
+        uint64_t num = rand();
+        dynamic_bitset db(uint64_width, num);
+        std::bitset<uint64_width> bs(num);
+        std::size_t pos = rand() % uint64_width;
+        std::size_t len = rand() % (uint64_width - pos);
+        bool val = rand() % 2;
+        db.set(pos, len, val);
+        for (std::size_t j = pos; j < pos + len; ++j) {
+            bs.set(j, val);
+        }
+        assert(db.to_string() == bs.to_string());
+    }
+}
+
 void test_left_shift() {
     static constexpr std::size_t iter_cnt = 100;
     for (std::size_t i = 0; i < iter_cnt; ++i) {
@@ -45,6 +62,7 @@ void test_right_shift() {
 int main() {
     srand(time(0));
     test_to_string();
+    test_set();
     test_left_shift();
     test_right_shift();
     std::cout << "All tests passed\n";

@@ -149,6 +149,9 @@ private:
     static size_type block_cnt_from_bit_cnt(size_type bit_cnt);
     static size_type bit_pos_to_block_index(size_type pos);
     static size_type bit_pos_to_bit_index(size_type pos);
+
+    static constexpr block_type zeros = static_cast<block_type>(0);
+    static constexpr block_type ones = static_cast<block_type>(~0);
 };
 
 }  // namespace dts
