@@ -5,17 +5,24 @@
 namespace dts {
 
 template<typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
-T n_lsb(T val, std::size_t n) {
+T bit_mask(std::size_t a, std::size_t b) {
+    // [a,b)
     static constexpr std::size_t type_width = sizeof(T) * bits_per_byte;
-    assert(n <= type_width);
-    return n < type_width ? (val & ((1 << n) - 1)) : val;
+    static constexpr T one = static_cast<T>(1);
+    static constexpr T all_ones = static_cast<T>(~0);
+    assert(a <= b && b <= type_width);
+    return (b - a == type_width) ? all_ones : (((one << (b - a)) - 1) << a);
 }
 
-template<typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
+template<typename T>
+T n_lsb(T val, std::size_t n) {
+    return (val & bit_mask<T>(0, n));
+}
+
+template<typename T>
 T n_msb(T val, std::size_t n) {
     static constexpr std::size_t type_width = sizeof(T) * bits_per_byte;
-    assert(n <= type_width);
-    return n > 0 ? (val >> (type_width - n)) : 0;
+    return ((val & bit_mask<T>(type_width - n, type_width)) >> (type_width - n));
 }
 
 dynamic_bitset::dynamic_bitset(size_type bit_cnt, uint64_t value)
@@ -125,9 +132,7 @@ dynamic_bitset& dynamic_bitset::set(size_type pos, size_type len, bool val) {
     else {
         first_blk =
           (n_msb(first_blk, bits_per_block - last_bit_idx) << last_bit_idx) |
-          (((new_bits >> first_bit_idx)
-            << (bits_per_block - last_bit_idx + first_bit_idx)) >>
-           (bits_per_block - last_bit_idx)) |
+          (new_bits & bit_mask<block_type>(first_bit_idx, last_bit_idx)) |
           n_lsb(first_blk, first_bit_idx);
     }
 
