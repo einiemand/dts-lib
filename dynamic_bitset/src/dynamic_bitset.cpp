@@ -4,6 +4,8 @@
 
 namespace dts {
 
+namespace detail {
+
 template<typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
 T bit_mask(std::size_t a, std::size_t b) {
     // [a,b)
@@ -16,20 +18,25 @@ T bit_mask(std::size_t a, std::size_t b) {
 
 template<typename T>
 T n_lsb(T val, std::size_t n) {
+    // n least significant bits.
     return (val & bit_mask<T>(0, n));
 }
 
 template<typename T>
 T n_msb(T val, std::size_t n) {
+    // n most significant bits.
     static constexpr std::size_t type_width = sizeof(T) * bits_per_byte;
-    return ((val & bit_mask<T>(type_width - n, type_width)) >> (type_width - n));
+    return ((val & bit_mask<T>(type_width - n, type_width)) >>
+            (type_width - n));
 }
+
+}  // namespace detail
 
 dynamic_bitset::dynamic_bitset(size_type bit_cnt, uint64_t value)
     : buf_(block_cnt_from_bit_cnt(bit_cnt)),
       bit_cnt_(bit_cnt) {
     if (bit_cnt < uint64_width) {
-        value = n_lsb(value, bit_cnt);
+        value = detail::n_lsb(value, bit_cnt);
     }
     size_type blks_to_write =
       std::min(sizeof(value) / bytes_per_block, buf_.size());
@@ -74,8 +81,9 @@ dynamic_bitset& dynamic_bitset::operator<<=(size_type offset) {
                        low_blk_idx = high_blk_idx - blk_idx_diff;
              low_blk_idx > 0; --high_blk_idx, --low_blk_idx)
         {
-            buf_[high_blk_idx] = (buf_[low_blk_idx] << bit_idx_diff) |
-                                 n_msb(buf_[low_blk_idx - 1], bit_idx_diff);
+            buf_[high_blk_idx] =
+              (buf_[low_blk_idx] << bit_idx_diff) |
+              detail::n_msb(buf_[low_blk_idx - 1], bit_idx_diff);
         }
         buf_[blk_idx_diff] = (buf_[0] << bit_idx_diff);
         set(0, offset, 0);
@@ -93,8 +101,9 @@ dynamic_bitset& dynamic_bitset::operator>>=(size_type offset) {
         for (size_type low_blk_idx = 0, high_blk_idx = blk_idx_diff;
              high_blk_idx + 1 < num_blocks(); ++low_blk_idx, ++high_blk_idx)
         {
-            buf_[low_blk_idx] = (buf_[high_blk_idx] >> bit_idx_diff) |
-                                n_lsb(buf_[high_blk_idx + 1], bit_idx_diff);
+            buf_[low_blk_idx] =
+              (buf_[high_blk_idx] >> bit_idx_diff) |
+              detail::n_lsb(buf_[high_blk_idx + 1], bit_idx_diff);
         }
         buf_[num_blocks() - blk_idx_diff - 1] = (buf_.back() >> bit_idx_diff);
         set(size() - offset, offset, 0);
@@ -137,18 +146,19 @@ dynamic_bitset& dynamic_bitset::set(size_type pos, size_type len, bool val) {
     block_type& first_blk = buf_[first_blk_idx];
     block_type& last_blk = buf_[last_blk_idx];
     if (first_blk_idx < last_blk_idx) {
-        first_blk =
-          (n_msb(new_bits, bits_per_block - first_bit_idx) << first_bit_idx) |
-          n_lsb(first_blk, first_bit_idx);
-        last_blk =
-          (n_msb(last_blk, bits_per_block - last_bit_idx) << last_bit_idx) |
-          n_lsb(new_bits, last_bit_idx);
+        first_blk = (detail::n_msb(new_bits, bits_per_block - first_bit_idx)
+                     << first_bit_idx) |
+                    detail::n_lsb(first_blk, first_bit_idx);
+        last_blk = (detail::n_msb(last_blk, bits_per_block - last_bit_idx)
+                    << last_bit_idx) |
+                   detail::n_lsb(new_bits, last_bit_idx);
     }
     else {
-        first_blk =
-          (n_msb(first_blk, bits_per_block - last_bit_idx) << last_bit_idx) |
-          (new_bits & bit_mask<block_type>(first_bit_idx, last_bit_idx)) |
-          n_lsb(first_blk, first_bit_idx);
+        first_blk = (detail::n_msb(first_blk, bits_per_block - last_bit_idx)
+                     << last_bit_idx) |
+                    (new_bits & detail::bit_mask<block_type>(first_bit_idx,
+                                                             last_bit_idx)) |
+                    detail::n_lsb(first_blk, first_bit_idx);
     }
 
     return *this;
@@ -185,7 +195,7 @@ dynamic_bitset& dynamic_bitset::flip() {
             buf_[blk_idx] ^= ones;
         }
         const size_type last_bit_idx = bit_pos_to_bit_index(size() - 1) + 1;
-        buf_.back() ^= bit_mask<block_type>(0, last_bit_idx);
+        buf_.back() ^= detail::bit_mask<block_type>(0, last_bit_idx);
     }
     return *this;
 }
@@ -195,7 +205,9 @@ bool dynamic_bitset::test(size_type pos) const {
 }
 
 bool dynamic_bitset::any() const {
-    return std::any_of(buf_.begin(), buf_.end(), [](block_type blk) { return blk != zeros; });
+    return std::any_of(buf_.begin(), buf_.end(), [](block_type blk) {
+        return blk != zeros;
+    });
 }
 
 dynamic_bitset::reference dynamic_bitset::operator[](size_type pos) {
@@ -212,6 +224,11 @@ dynamic_bitset::const_reference dynamic_bitset::operator[](
 void dynamic_bitset::push_back(bool bit) {
     expand_if_smaller_than(size() + 1);
     set(size() - 1, 1, bit);
+}
+
+void dynamic_bitset::swap(dynamic_bitset& other) noexcept {
+    buf_.swap(other.buf_);
+    std::swap(bit_cnt_, other.bit_cnt_);
 }
 
 dynamic_bitset::size_type dynamic_bitset::size() const {

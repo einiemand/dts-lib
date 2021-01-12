@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cassert>
+#include <climits>
 #include <cstdint>
 #include <functional>
 #include <vector>
 
 namespace dts {
 
-inline constexpr std::size_t bits_per_byte = 8;
+inline constexpr std::size_t bits_per_byte = CHAR_BIT;
 inline constexpr std::size_t uint64_width = sizeof(uint64_t) * bits_per_byte;
 
 class dynamic_bitset {
@@ -98,8 +99,10 @@ public:
     dynamic_bitset(const dynamic_bitset&) = default;
     dynamic_bitset& operator=(const dynamic_bitset&) = default;
 
-    dynamic_bitset(dynamic_bitset&&) noexcept = default;
-    dynamic_bitset& operator=(dynamic_bitset&&) noexcept = default;
+    dynamic_bitset(dynamic_bitset&&) noexcept(
+      std::is_nothrow_move_constructible_v<buffer_type>) = default;
+    dynamic_bitset& operator=(dynamic_bitset&&) noexcept(
+      std::is_nothrow_move_assignable_v<buffer_type>) = default;
 
     dynamic_bitset& operator&=(const dynamic_bitset& other);
     dynamic_bitset& operator|=(const dynamic_bitset& other);
@@ -111,9 +114,13 @@ public:
     dynamic_bitset operator~() const;
 
     friend bool operator==(const dynamic_bitset& lhs,
-                           const dynamic_bitset& rhs);
+                           const dynamic_bitset& rhs) {
+        return lhs.size() == rhs.size() && lhs.buf_ == rhs.buf_;
+    }
     friend bool operator!=(const dynamic_bitset& lhs,
-                           const dynamic_bitset& rhs);
+                           const dynamic_bitset& rhs) {
+        return !(lhs == rhs);
+    }
 
     dynamic_bitset& set(size_type pos, size_type len, bool val);
     dynamic_bitset& set(size_type pos, bool val = true);
@@ -130,6 +137,7 @@ public:
     const_reference operator[](size_type pos) const;
 
     void push_back(bool bit);
+    void swap(dynamic_bitset& other) noexcept;
 
     size_type size() const;
     size_type num_blocks() const;
@@ -151,3 +159,11 @@ private:
 };
 
 }  // namespace dts
+
+namespace std {
+
+inline void swap(dts::dynamic_bitset& lhs, dts::dynamic_bitset& rhs) noexcept {
+    lhs.swap(rhs);
+}
+
+}  // namespace std

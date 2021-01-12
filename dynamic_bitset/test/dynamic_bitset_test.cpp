@@ -84,6 +84,16 @@ void test_push_back() {
     }
 }
 
+void test_comparator() {
+    static constexpr std::size_t iter_cnt = 100;
+    for (std::size_t i = 0; i < iter_cnt; ++i) {
+        uint64_t num = rand();
+        dynamic_bitset db1(uint64_width, num);
+        dynamic_bitset db2(uint64_width, num);
+        assert(db1.to_string() == db2.to_string());
+    }
+}
+
 int main() {
     srand(time(0));
     test_to_string();
@@ -92,6 +102,7 @@ int main() {
     test_right_shift();
     test_flip();
     test_push_back();
+    test_comparator();
     std::cout << "All tests passed\n";
 
     return 0;
