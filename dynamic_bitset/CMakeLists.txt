@@ -1,4 +1,4 @@
-project (big_int)
+project (dynamic_bitset)
 
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_FLAGS "-g -Wall -Wextra -pedantic")
