@@ -1,5 +1,8 @@
 #include "dynamic_bitset.hpp"
 
+#include <algorithm>
+#include <iomanip>
+#include <iterator>
 #include <sstream>
 
 namespace dts {
@@ -30,10 +33,49 @@ T n_msb(T val, std::size_t n) {
             (type_width - n));
 }
 
+static const char* hex_char_to_bin(char hex_char) {
+    switch (toupper(hex_char)) {
+    case '0':
+        return "0000";
+    case '1':
+        return "0001";
+    case '2':
+        return "0010";
+    case '3':
+        return "0011";
+    case '4':
+        return "0100";
+    case '5':
+        return "0101";
+    case '6':
+        return "0110";
+    case '7':
+        return "0111";
+    case '8':
+        return "1000";
+    case '9':
+        return "1001";
+    case 'A':
+        return "1010";
+    case 'B':
+        return "1011";
+    case 'C':
+        return "1100";
+    case 'D':
+        return "1101";
+    case 'E':
+        return "1110";
+    case 'F':
+        return "1111";
+    default:
+        assert(false);
+    }
+}
+
 }  // namespace detail
 
 dynamic_bitset::dynamic_bitset(size_type bit_cnt, uint64_t value)
-    : buf_(block_cnt_from_bit_cnt(bit_cnt)),
+    : buf_(bit_cnt_to_block_cnt(bit_cnt)),
       bit_cnt_(bit_cnt) {
     if (bit_cnt < uint64_width) {
         value = detail::n_lsb(value, bit_cnt);
@@ -244,22 +286,51 @@ bool dynamic_bitset::empty() const {
 }
 
 std::string dynamic_bitset::to_string(char zero, char one) const {
-    std::ostringstream stream;
-    for (size_type i = size(); i > 0; --i) {
-        stream << ((*this)[i - 1] ? one : zero);
+    static constexpr size_type hexes_per_block = bits_per_block / bits_per_hex;
+    static constexpr char default_zero = '0';
+    static constexpr char default_one = '1';
+
+    std::string rep;
+    if (!empty()) {
+        std::stringstream hex_stream;
+        for (size_type i = num_blocks(); i > 0; --i) {
+            size_type blk_idx = i - 1;
+            hex_stream << std::setw(hexes_per_block)
+                       << std::setfill(default_zero) << std::hex
+                       << buf_[blk_idx];
+        }
+        std::stringstream bin_stream;
+        std::transform(std::istream_iterator<char>(hex_stream),
+                       std::istream_iterator<char>(),
+                       std::ostream_iterator<const char*>(bin_stream),
+                       detail::hex_char_to_bin);
+
+        size_type last_bit_idx = bit_pos_to_bit_index(size() - 1);
+        size_type last_blk_bit_cnt = last_bit_idx + 1;
+        size_type num_bits_to_drop = bits_per_block - last_blk_bit_cnt;
+        bin_stream.seekg(num_bits_to_drop);
+
+        bin_stream >> rep;
+        std::replace(rep.begin(), rep.end(), default_zero, zero);
+        std::replace(rep.begin(), rep.end(), default_one, one);
     }
-    return stream.str();
+    return rep;
 }
 
 void dynamic_bitset::expand_if_smaller_than(size_type new_bit_cnt) {
     if (size() < new_bit_cnt) {
-        size_type new_blk_cnt = block_cnt_from_bit_cnt(new_bit_cnt);
+        size_type new_blk_cnt = bit_cnt_to_block_cnt(new_bit_cnt);
         buf_.resize(new_blk_cnt, zeros);
         bit_cnt_ = new_bit_cnt;
     }
 }
 
-dynamic_bitset::size_type dynamic_bitset::block_cnt_from_bit_cnt(
+dynamic_bitset::size_type dynamic_bitset::bit_cnt_to_hex_cnt(
+  size_type bit_cnt) {
+    return (bit_cnt + bits_per_hex - 1) / bits_per_hex;
+}
+
+dynamic_bitset::size_type dynamic_bitset::bit_cnt_to_block_cnt(
   size_type bit_cnt) {
     return (bit_cnt + bits_per_block - 1) / bits_per_block;
 }

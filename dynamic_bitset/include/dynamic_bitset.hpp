@@ -3,13 +3,14 @@
 #include <cassert>
 #include <climits>
 #include <cstdint>
-#include <functional>
+#include <string>
 #include <vector>
 
 namespace dts {
 
 inline constexpr std::size_t bits_per_byte = CHAR_BIT;
 inline constexpr std::size_t uint64_width = sizeof(uint64_t) * bits_per_byte;
+inline constexpr std::size_t bits_per_hex = 4;
 
 class dynamic_bitset {
 public:
@@ -150,7 +151,8 @@ private:
 
     void expand_if_smaller_than(size_type new_bit_cnt);
 
-    static size_type block_cnt_from_bit_cnt(size_type bit_cnt);
+    static size_type bit_cnt_to_hex_cnt(size_type bit_cnt);
+    static size_type bit_cnt_to_block_cnt(size_type bit_cnt);
     static size_type bit_pos_to_block_index(size_type pos);
     static size_type bit_pos_to_bit_index(size_type pos);
 
